@@ -1,0 +1,14 @@
+[package]
+authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
+description = "Parameterized templates for Kubernetes manifests."
+homepage = "https://github.com/InQuicker/ktmpl"
+keywords = ["kubernetes"]
+license = "MIT"
+name = "ktmpl"
+readme = "README.md"
+repository = "https://github.com/InQuicker/ktmpl"
+version = "0.1.0"
+
+[dependencies]
+clap = "2.1.1"
+yaml-rust = "0.3.0"

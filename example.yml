@@ -1,0 +1,68 @@
+---
+kind: "Template"
+apiVersion: "v1"
+metadata:
+  name: "mongodb-ephemeral"
+  annotations:
+    description: "Provides a MongoDB database service"
+labels:
+  template: "mongodb-ephemeral-template"
+objects:
+  - kind: "Service"
+    apiVersion: "v1"
+    metadata:
+      name: "$(DATABASE_SERVICE_NAME)"
+    spec:
+      ports:
+        - name: "mongo"
+          protocol: "TCP"
+          targetPort: 27017
+      selector:
+        name: "$(DATABASE_SERVICE_NAME)"
+  - kind: "ReplicationController"
+    apiVersion: "v1"
+    metadata:
+      name: "$(DATABASE_SERVICE_NAME)"
+    spec:
+      replicas: "$((REPLICA_COUNT))"
+      selector:
+        name: "$(DATABASE_SERVICE_NAME)"
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            name: "$(DATABASE_SERVICE_NAME)"
+        spec:
+          containers:
+            - name: "mongodb"
+              image: "docker.io/centos/mongodb-26-centos7"
+              ports:
+                - containerPort: 27017
+                  protocol: "TCP"
+              env:
+                - name: "MONGODB_USER"
+                  value: "$(MONGODB_USER)"
+                - name: "MONGODB_PASSWORD"
+                  value: "$(MONGODB_PASSWORD)"
+                - name: "MONGODB_DATABASE"
+                  value: "$(MONGODB_DATABASE)"
+parameters:
+  - name: "DATABASE_SERVICE_NAME"
+    description: "Database service name"
+    value: "mongodb"
+    required: true
+  - name: "MONGODB_USER"
+    description: "Username for MongoDB user that will be used for accessing the database"
+    value: "password"
+    required: true
+  - name: "MONGODB_PASSWORD"
+    description: "Password for the MongoDB user"
+    required: true
+  - name: "MONGODB_DATABASE"
+    description: "Database name"
+    value: "sampledb"
+    required: true
+  - name: "REPLICA_COUNT"
+    description: "Number of mongo replicas to run"
+    value: "1"
+    required: true
