@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use std::error::Error;
 
 use yaml::{EmitError, Yaml, YamlEmitter, YamlLoader};
 
 use parameter::Parameter;
+use processor::process_yaml;
 
 pub struct Template {
     pub objects: Vec<Yaml>,
@@ -45,19 +47,27 @@ impl Template {
         })
     }
 
-    pub fn process(self) -> Result<String, String> {
-        let mut manifests = String::new();
-
-        for object in self.objects.iter() {
-            let mut emitter = YamlEmitter::new(&mut manifests);
-            try!(emitter.dump(&object).map_err(|error| {
-                match error {
-                    EmitError::FmtError(error) => format!("{}", error),
-                    EmitError::BadHashmapKey => "Bad hashmap key in YAML structure.".to_owned(),
-                }
-            }));
+    pub fn process(mut self, parameters: HashMap<String, String>) -> Result<String, String> {
+        for object in self.objects.iter_mut() {
+            try!(process_yaml(object, &parameters));
         }
 
-        Ok(manifests)
+        dump(self.objects)
     }
+}
+
+fn dump(objects: Vec<Yaml>) -> Result<String, String> {
+    let mut manifests = String::new();
+
+    for object in objects.iter() {
+        let mut emitter = YamlEmitter::new(&mut manifests);
+        try!(emitter.dump(&object).map_err(|error| {
+            match error {
+                EmitError::FmtError(error) => format!("{}", error),
+                EmitError::BadHashmapKey => "Bad hashmap key in YAML structure.".to_owned(),
+            }
+        }));
+    }
+
+    Ok(manifests)
 }

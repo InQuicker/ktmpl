@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use yaml::Yaml;
@@ -22,6 +23,8 @@ pub enum ParameterValue {
     Int(i64),
     String(String),
 }
+
+pub type ParamMap = HashMap<String, String>;
 
 impl Parameter {
     pub fn from_yaml(yaml: &Yaml) -> Result<Self, String> {
@@ -72,4 +75,20 @@ impl FromStr for ParameterType {
             _ => Err("parameterType must be base64, bool, int, or string.".to_owned()),
         }
     }
+}
+
+pub fn param_map(parameters: Vec<String>) -> Result<ParamMap, String> {
+    let mut param_map = HashMap::new();
+
+    for parameter in parameters {
+        let mut parts: Vec<String> = parameter.split('=').map(|s| s.to_string()).collect();
+
+        if parts.len() == 2 {
+            param_map.insert(parts.remove(0), parts.remove(0));
+        } else {
+            return Err("Parameters must be supplied in the form KEY=VALUE.".to_string());
+        }
+    }
+
+    Ok(param_map)
 }

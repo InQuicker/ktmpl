@@ -1,6 +1,7 @@
 extern crate clap;
 extern crate yaml_rust as yaml;
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::Read;
@@ -8,11 +9,12 @@ use std::process::exit;
 
 use clap::{App, AppSettings, Arg};
 
+use parameter::param_map;
 use template::Template;
 
 mod parameter;
+mod processor;
 mod template;
-
 
 fn main() {
     if let Err(error) = real_main() {
@@ -34,6 +36,14 @@ fn real_main() -> Result<(), String> {
                 .required(true)
                 .index(1)
         )
+        .arg(
+            Arg::with_name("parameter")
+                .help("Key-value pair used to fill in the template's parameters in the format key=value")
+                .long("parameter")
+                .short("p")
+                .multiple(true)
+                .takes_value(true)
+        )
         .get_matches();
 
     let filename = matches.value_of("template").expect("template wasn't provided");
@@ -42,8 +52,12 @@ fn real_main() -> Result<(), String> {
     try!(file.read_to_string(&mut template_data).map_err(|err| err.description().to_owned()));
 
     let template = try!(Template::from_string(template_data));
+    let parameters = match matches.values_of("parameter") {
+        Some(parameters) => try!(param_map(parameters.map(|s| s.to_string()).collect())),
+        None => HashMap::new(),
+    };
 
-    match template.process() {
+    match template.process(parameters) {
         Ok(manifests) => {
             println!("{}", manifests);
 
