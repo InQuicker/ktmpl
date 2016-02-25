@@ -11,4 +11,6 @@ version = "0.1.0"
 
 [dependencies]
 clap = "2.1.1"
+lazy_static = "0.1.15"
+regex = "0.1.54"
 yaml-rust = "0.3.0"

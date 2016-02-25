@@ -1,4 +1,7 @@
 extern crate clap;
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
 extern crate yaml_rust as yaml;
 
 use std::collections::HashMap;
@@ -9,7 +12,7 @@ use std::process::exit;
 
 use clap::{App, AppSettings, Arg};
 
-use parameter::param_map;
+use parameter::user_values;
 use template::Template;
 
 mod parameter;
@@ -46,18 +49,19 @@ fn real_main() -> Result<(), String> {
         )
         .get_matches();
 
+    let user_values = match matches.values_of("parameter") {
+        Some(parameters) => try!(user_values(parameters.map(|s| s.to_string()).collect())),
+        None => HashMap::new(),
+    };
+
     let filename = matches.value_of("template").expect("template wasn't provided");
     let mut file = try!(File::open(filename).map_err(|err| err.description().to_owned()));
     let mut template_data = String::new();
     try!(file.read_to_string(&mut template_data).map_err(|err| err.description().to_owned()));
 
-    let template = try!(Template::from_string(template_data));
-    let parameters = match matches.values_of("parameter") {
-        Some(parameters) => try!(param_map(parameters.map(|s| s.to_string()).collect())),
-        None => HashMap::new(),
-    };
+    let template = try!(Template::new(template_data, user_values));
 
-    match template.process(parameters) {
+    match template.process() {
         Ok(manifests) => {
             println!("{}", manifests);
 

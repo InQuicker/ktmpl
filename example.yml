@@ -53,7 +53,7 @@ parameters:
     required: true
   - name: "MONGODB_USER"
     description: "Username for MongoDB user that will be used for accessing the database"
-    value: "password"
+    value: "username"
     required: true
   - name: "MONGODB_PASSWORD"
     description: "Password for the MongoDB user"

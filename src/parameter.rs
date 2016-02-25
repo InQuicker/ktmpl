@@ -9,7 +9,7 @@ pub struct Parameter {
     pub name: String,
     pub parameter_type: Option<ParameterType>,
     pub required: bool,
-    pub value: Option<ParameterValue>,
+    pub value: Option<String>,
 }
 
 pub enum ParameterType {
@@ -18,16 +18,11 @@ pub enum ParameterType {
     String,
 }
 
-pub enum ParameterValue {
-    Bool(bool),
-    Int(i64),
-    String(String),
-}
-
-pub type ParamMap = HashMap<String, String>;
+pub type ParamMap = HashMap<String, Parameter>;
+pub type UserValues = HashMap<String, String>;
 
 impl Parameter {
-    pub fn from_yaml(yaml: &Yaml) -> Result<Self, String> {
+    pub fn new(yaml: &Yaml, user_values: &UserValues) -> Result<Self, String> {
         let description = match yaml["description"] {
             Yaml::String(ref description) => Some(description.clone()),
             _ => None,
@@ -45,11 +40,23 @@ impl Parameter {
             None => None,
         };
         let required = yaml["required"].as_bool().unwrap_or(false);
-        let value = match yaml["value"] {
-            Yaml::Boolean(ref value) => Some(ParameterValue::Bool(value.clone())),
-            Yaml::Integer(ref value) => Some(ParameterValue::Int(value.clone())),
-            Yaml::String(ref value) => Some(ParameterValue::String(value.clone())),
-            _ => return Err("Parameter values must be boolean, i64, or string.".to_owned()),
+        let value = match user_values.get(&name) {
+            Some(value) => Some(value.clone()),
+            None => match yaml["value"] {
+                Yaml::Boolean(ref value)  => Some(format!("{}", value)),
+                Yaml::Integer(ref value) => Some(format!("{}", value)),
+                Yaml::String(ref value) => Some(value.clone()),
+                _ => if required {
+                    return Err(
+                        format!(
+                            "Parameter {} required and must be boolean, i64, or string.",
+                            display_name.unwrap_or(name),
+                        )
+                    )
+                } else {
+                    None
+                },
+            }
         };
 
         Ok(Parameter {
@@ -77,18 +84,18 @@ impl FromStr for ParameterType {
     }
 }
 
-pub fn param_map(parameters: Vec<String>) -> Result<ParamMap, String> {
-    let mut param_map = HashMap::new();
+pub fn user_values(parameters: Vec<String>) -> Result<UserValues, String> {
+    let mut user_values = HashMap::new();
 
     for parameter in parameters {
         let mut parts: Vec<String> = parameter.split('=').map(|s| s.to_string()).collect();
 
         if parts.len() == 2 {
-            param_map.insert(parts.remove(0), parts.remove(0));
+            user_values.insert(parts.remove(0), parts.remove(0));
         } else {
             return Err("Parameters must be supplied in the form KEY=VALUE.".to_string());
         }
     }
 
-    Ok(param_map)
+    Ok(user_values)
 }
