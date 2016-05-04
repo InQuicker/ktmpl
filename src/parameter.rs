@@ -49,8 +49,13 @@ impl Parameter {
                 _ => if required {
                     return Err(
                         format!(
-                            "Parameter {} required and must be boolean, i64, or string.",
+                            "Parameter {} required and must be {}",
                             display_name.unwrap_or(name),
+                            parameter_type.map(|pt| match pt {
+                                ParameterType::Bool => "a bool",
+                                ParameterType::Int => "an int",
+                                ParameterType::String => "a string"
+                            }).unwrap_or("base64, bool, int, or string")
                         )
                     )
                 } else {
