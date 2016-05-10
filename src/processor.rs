@@ -42,13 +42,13 @@ fn process_hash(hash: &mut Hash, parameters: &ParamMap) -> ProcessorResult {
 fn process_string(string: &mut String, parameters: &ParamMap) -> ProcessorResult {
     lazy_static! {
         static ref LITERAL_INTERPOLATION: Regex = Regex::new(
-            r"\$\({2}(.*)\){2}"
+            r"\$\({2}([^\)]*)\){2}"
         ).expect("Failed to compile regex.");
     }
 
     lazy_static! {
         static ref STRING_INTERPOLATION: Regex = Regex::new(
-            r"\$\((.*)\)"
+            r"\$\(([^\)]*)\)"
         ).expect("Failed to compile regex.");
     }
 
