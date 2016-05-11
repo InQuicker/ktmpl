@@ -1,0 +1,16 @@
+.dockerignore
+Cargo.lock
+Cargo.toml
+Dockerfile
+LICENSE
+Makefile
+README.md
+example.yml
+src
+target/debug
+target/release
+target/x86_64-unknown-linux-gnu/debug
+target/x86_64-unknown-linux-gnu/release/build
+target/x86_64-unknown-linux-gnu/release/deps
+target/x86_64-unknown-linux-gnu/release/examples
+target/x86_64-unknown-linux-gnu/release/native
