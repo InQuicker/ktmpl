@@ -45,6 +45,22 @@ ktmpl example.yml --parameter MONGODB_PASSWORD=password | kubectl create -f -
 
 ## Installing ktmpl
 
+### Cargo
+
+```
+cargo install ktmpl
+```
+
+### Precompiled binary
+
+[Releases](https://github.com/InQuicker/ktmpl/releases)
+
+### Docker
+
+```
+docker pull inquicker/ktmpl
+```
+
 ### Building from source
 
 1. Install the appropriate version of [Rust](https://www.rust-lang.org/) for your system.
