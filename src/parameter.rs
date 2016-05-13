@@ -98,7 +98,7 @@ pub fn user_values(parameters: Vec<String>) -> Result<UserValues, String> {
         if parts.len() < 2 {
             return Err("Parameters must be supplied in the form KEY=VALUE.".to_string());
         } else {
-            user_values.insert(parts.remove(0), parts.concat());
+            user_values.insert(parts.remove(0), parts.join("="));
         }
     }
 
