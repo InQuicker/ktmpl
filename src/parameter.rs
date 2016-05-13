@@ -95,10 +95,10 @@ pub fn user_values(parameters: Vec<String>) -> Result<UserValues, String> {
     for parameter in parameters {
         let mut parts: Vec<String> = parameter.split('=').map(|s| s.to_string()).collect();
 
-        if parts.len() == 2 {
-            user_values.insert(parts.remove(0), parts.remove(0));
-        } else {
+        if parts.len() < 2 {
             return Err("Parameters must be supplied in the form KEY=VALUE.".to_string());
+        } else {
+            user_values.insert(parts.remove(0), parts.concat());
         }
     }
 
