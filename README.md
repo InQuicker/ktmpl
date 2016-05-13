@@ -69,6 +69,14 @@ docker pull inquicker/ktmpl
 
 Make sure Cargo's bin directory is added to your PATH environment variable.
 
+## Development
+
+To package the current release for distribution, update `TAG` in the Makefile and then run `make`.
+Release artifacts will be written to the `dist` directory.
+Docker images for `inquicker/ktmpl` and `inquicker/ktmpl:$TAG` will be created, but you must push
+them manually.
+Your GPG secret key will be required to sign `sha256sums.txt`.
+
 ## Legal
 
 ktmpl is released under the MIT license. See `LICENSE` for details.
