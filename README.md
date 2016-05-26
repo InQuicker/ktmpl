@@ -6,18 +6,20 @@ It is a very simple client-side implementation of the [Templates + Parameterizat
 ## Synopsis
 
 ```
-ktmpl 0.1.0
+ktmpl 0.3.0
 Produces a Kubernetes manifest from a parameterized template
 
 USAGE:
-	ktmpl [FLAGS] [OPTIONS] <template> [--]
+    ktmpl [FLAGS] <template> [OPTIONS]
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 OPTIONS:
-    -p, --parameter <parameter>...    Key-value pair used to fill in the template's parameters in the format key=value
+    -b, --base64-parameter <parameter>... Same as --parameter, but the value will first be encoded with Base64
+    -p, --parameter <parameter>           One or more key-value pairs used to fill in the template's parameters,
+                                            formatted as: KEY=VALUE [KEY=VALUE ...]
 
 ARGS:
     <template>    Path to the template file to be processed
@@ -42,6 +44,14 @@ The processed template will be output to stdout, suitable for piping into a `kub
 ``` bash
 ktmpl example.yml --parameter MONGODB_PASSWORD=password | kubectl create -f -
 ```
+
+To automatically encode a value with Base64 before inserting it into the template, use the `--base64-parameter` option:
+
+``` bash
+ktmpl example.yml --base64-parameter MONGODB_PASSWORD=password | kubectl create -f -
+```
+
+This can be handy when working with Kubernetes secrets, or anywhere else binary or opaque data is needed.
 
 ## Installing ktmpl
 
