@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+use std::error::Error;
 use std::str::FromStr;
 
+use base64::encode;
 use yaml::Yaml;
 
 pub struct Parameter {
@@ -89,7 +91,7 @@ impl FromStr for ParameterType {
     }
 }
 
-pub fn user_values(parameters: Vec<String>) -> Result<UserValues, String> {
+pub fn user_values(parameters: Vec<String>, base64_encode: bool) -> Result<UserValues, String> {
     let mut user_values = HashMap::new();
 
     for parameter in parameters {
@@ -98,7 +100,19 @@ pub fn user_values(parameters: Vec<String>) -> Result<UserValues, String> {
         if parts.len() < 2 {
             return Err("Parameters must be supplied in the form KEY=VALUE.".to_string());
         } else {
-            user_values.insert(parts.remove(0), parts.join("="));
+            let key = parts.remove(0);
+            let value = parts.join("=");
+
+            let final_value = if base64_encode {
+                match encode(&value) {
+                    Ok(v) => v,
+                    Err(error) => return Err(format!("{}", error.description())),
+                }
+            } else {
+                value
+            };
+
+            user_values.insert(key, final_value);
         }
     }
 
