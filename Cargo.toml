@@ -10,7 +10,8 @@ repository = "https://github.com/InQuicker/ktmpl"
 version = "0.2.1"
 
 [dependencies]
+base64 = "0.1.1"
 clap = "2.5.1"
 lazy_static = "0.2.1"
-regex = "0.1.69"
+regex = "0.1.71"
 yaml-rust = "0.3.2"
