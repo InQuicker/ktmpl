@@ -2,11 +2,9 @@ TAG = 0.3.0
 
 all: dist
 
-.PHONY: target/release/ktmpl
 target/release/ktmpl:
 	cargo build --release
 
-.PHONY: target/x86_64-unknown-linux-musl/release/ktmpl
 target/x86_64-unknown-linux-musl/release/ktmpl:
 	docker run \
 		--rm \
