@@ -10,16 +10,17 @@ ktmpl 0.4.0
 Produces a Kubernetes manifest from a parameterized template
 
 USAGE:
-    ktmpl [FLAGS] [OPTIONS] <template>
+    ktmpl [OPTIONS] <template>
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 OPTIONS:
-    -b, --base64-parameter <parameter>... Same as --parameter, but for values already encoded in Base64
-    -p, --parameter <parameter>           One or more key-value pairs used to fill in the template's parameters,
-                                            formatted as: KEY=VALUE [KEY=VALUE ...]
+    -b, --base64-parameter <NAME> <VALUE>
+        Same as --parameter, but for values already encoded in Base64
+    -p, --parameter <NAME> <VALUE>
+        Supplies a value for the named parameter
 
 ARGS:
     <template>    Path to the template file to be processed
@@ -34,10 +35,15 @@ To provide values for template parameters, use the `--parameter` option to suppl
 Using the provided example.yml, this would mean:
 
 ``` bash
-ktmpl example.yml --parameter MONGODB_PASSWORD=password
+ktmpl example.yml --parameter MONGODB_PASSWORD secret
 ```
 
-Template parameters that have default values can be overridden with the same mechanism.
+Template parameters that have default values can be overridden with the same mechanism:
+
+
+``` bash
+ktmpl example.yml --parameter MONGODB_USER carl --parameter MONGODB_PASSWORD secret
+```
 
 The processed template will be output to stdout, suitable for piping into a `kubectl` command:
 
@@ -49,7 +55,7 @@ If a parameter's `parameterType` is `base64`, the value passed for that paramete
 If the value passed via `--parameter` is already Base64-encoded, and hence encoding it again would be an error, use the `--base64-parameter` option instead:
 
 ``` bash
-ktmpl example.yml --base64-parameter MONGODB_PASSWORD=cGFzc3dvcmQ= | kubectl create -f -
+ktmpl example.yml --base64-parameter MONGODB_PASSWORD c2VjcmV0 | kubectl create -f -
 ```
 
 This can be handy when working with Kubernetes secrets, or anywhere else binary or opaque data is needed.
