@@ -14,14 +14,30 @@ pub struct Parameter {
     pub value: Option<String>,
 }
 
+#[derive(PartialEq)]
 pub enum ParameterType {
+    Base64,
     Bool,
     Int,
     String,
 }
 
+pub struct UserValue {
+    pub base64_encoded: bool,
+    pub value: String,
+}
+
 pub type ParamMap = HashMap<String, Parameter>;
-pub type UserValues = HashMap<String, String>;
+pub type UserValues = HashMap<String, UserValue>;
+
+fn should_base64_encode(parameter_type: &Option<ParameterType>, user_value: &UserValue)
+-> bool {
+    if parameter_type.is_none() || parameter_type.as_ref().unwrap() != &ParameterType::Base64 {
+        return false;
+    }
+
+    !user_value.base64_encoded
+}
 
 impl Parameter {
     pub fn new(yaml: &Yaml, user_values: &UserValues) -> Result<Self, String> {
@@ -43,7 +59,16 @@ impl Parameter {
         };
         let required = yaml["required"].as_bool().unwrap_or(false);
         let value = match user_values.get(&name) {
-            Some(value) => Some(value.clone()),
+            Some(user_value) => {
+                if should_base64_encode(&parameter_type, &user_value) {
+                    match encode(&user_value.value) {
+                        Ok(v) => Some(v),
+                        Err(error) => return Err(format!("{}", error.description())),
+                    }
+                } else {
+                    Some(user_value.value.clone())
+                }
+            }
             None => match yaml["value"] {
                 Yaml::Boolean(ref value)  => Some(format!("{}", value)),
                 Yaml::Integer(ref value) => Some(format!("{}", value)),
@@ -54,6 +79,7 @@ impl Parameter {
                             "Parameter {} required and must be {}",
                             display_name.unwrap_or(name),
                             parameter_type.map(|pt| match pt {
+                                ParameterType::Base64 => "base64",
                                 ParameterType::Bool => "a bool",
                                 ParameterType::Int => "an int",
                                 ParameterType::String => "a string"
@@ -82,7 +108,7 @@ impl FromStr for ParameterType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "base64" => Ok(ParameterType::String),
+            "base64" => Ok(ParameterType::Base64),
             "bool" => Ok(ParameterType::Bool),
             "int" => Ok(ParameterType::Int),
             "string" => Ok(ParameterType::String),
@@ -91,8 +117,8 @@ impl FromStr for ParameterType {
     }
 }
 
-pub fn user_values(parameters: Vec<String>, base64_encode: bool) -> Result<UserValues, String> {
-    let mut user_values = HashMap::new();
+pub fn user_values(parameters: Vec<String>, base64_encoded: bool) -> Result<UserValues, String> {
+    let mut user_values = UserValues::new();
 
     for parameter in parameters {
         let mut parts: Vec<String> = parameter.split('=').map(|s| s.to_string()).collect();
@@ -103,16 +129,12 @@ pub fn user_values(parameters: Vec<String>, base64_encode: bool) -> Result<UserV
             let key = parts.remove(0);
             let value = parts.join("=");
 
-            let final_value = if base64_encode {
-                match encode(&value) {
-                    Ok(v) => v,
-                    Err(error) => return Err(format!("{}", error.description())),
-                }
-            } else {
-                value
+            let user_value = UserValue {
+                base64_encoded: base64_encoded,
+                value: value,
             };
 
-            user_values.insert(key, final_value);
+            user_values.insert(key, user_value);
         }
     }
 

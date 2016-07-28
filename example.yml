@@ -51,18 +51,23 @@ parameters:
     description: "Database service name"
     value: "mongodb"
     required: true
+    parameterType: "string"
   - name: "MONGODB_USER"
     description: "Username for MongoDB user that will be used for accessing the database"
     value: "username"
     required: true
+    parameterType: "string"
   - name: "MONGODB_PASSWORD"
     description: "Password for the MongoDB user"
     required: true
+    parameterType: "base64"
   - name: "MONGODB_DATABASE"
     description: "Database name"
     value: "sampledb"
     required: true
+    parameterType: "string"
   - name: "REPLICA_COUNT"
     description: "Number of mongo replicas to run"
-    value: "1"
+    value: 1
     required: true
+    parameterType: "int"

@@ -51,7 +51,7 @@ fn real_main() -> Result<(), String> {
         )
         .arg(
             Arg::with_name("base64-parameter")
-                .help("Same as --parameter, but the value will first be encoded with Base64")
+                .help("Same as --parameter, but for values already encoded in Base64")
                 .long("base64-parameter")
                 .short("b")
                 .value_name("parameter")
@@ -67,12 +67,12 @@ fn real_main() -> Result<(), String> {
         None => HashMap::new(),
     };
 
-    if let Some(parameters_to_encode) = matches.values_of("base64-parameter") {
-        let encoded_user_values = try!(
-            user_values(parameters_to_encode.map(|s| s.to_string()).collect(), true)
+    if let Some(parameters) = matches.values_of("base64-parameter") {
+        let encoded_values = try!(
+            user_values(parameters.map(|s| s.to_string()).collect(), true)
         );
 
-        values.extend(encoded_user_values);
+        values.extend(encoded_values);
     }
 
     let filename = matches.value_of("template").expect("template wasn't provided");
