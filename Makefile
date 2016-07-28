@@ -2,6 +2,11 @@ TAG = 0.4.0
 
 all: dist
 
+.PHONY: clean
+clean:
+	rm dist/*
+	cargo clean
+
 target/release/ktmpl:
 	cargo build --release
 
@@ -20,7 +25,7 @@ target/x86_64-unknown-linux-musl/release/ktmpl:
 docker-build:
 	docker build -t inquicker/ktmpl -t inquicker/ktmpl:$(TAG) .
 
-dist: dist/sha256sums.txt.sig docker-build
+dist: clean dist/sha256sums.txt.sig docker-build
 
 dist/ktmpl-$(TAG)-darwin.tar.gz: target/release/ktmpl
 	tar -c -C target/release -zvf dist/ktmpl-$(TAG)-darwin.tar.gz ktmpl
