@@ -33,7 +33,6 @@ fn real_main() -> Result<(), String> {
         .version(env!("CARGO_PKG_VERSION"))
         .about("Produces a Kubernetes manifest from a parameterized template")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .setting(AppSettings::AllowExternalSubcommands)
         .arg(
             Arg::with_name("template")
                 .help("Path to the template file to be processed")
@@ -42,35 +41,35 @@ fn real_main() -> Result<(), String> {
         )
         .arg(
             Arg::with_name("parameter")
-                .help("One or more key-value pairs used to fill in the template's parameters, \
-                      formatted as: KEY=VALUE [KEY=VALUE ...]")
+                .help("Supplies a value for the named parameter")
+                .next_line_help(true)
                 .long("parameter")
                 .short("p")
                 .multiple(true)
                 .takes_value(true)
+                .number_of_values(2)
+                .value_names(&["NAME", "VALUE"])
         )
         .arg(
             Arg::with_name("base64-parameter")
                 .help("Same as --parameter, but for values already encoded in Base64")
+                .next_line_help(true)
                 .long("base64-parameter")
                 .short("b")
-                .value_name("parameter")
                 .multiple(true)
                 .takes_value(true)
+                .number_of_values(2)
+                .value_names(&["NAME", "VALUE"])
         )
         .get_matches();
 
     let mut values = match matches.values_of("parameter") {
-        Some(parameters) => try!(
-            user_values(parameters.map(|s| s.to_string()).collect(), false)
-        ),
+        Some(parameters) => user_values(parameters, false),
         None => HashMap::new(),
     };
 
     if let Some(parameters) = matches.values_of("base64-parameter") {
-        let encoded_values = try!(
-            user_values(parameters.map(|s| s.to_string()).collect(), true)
-        );
+        let encoded_values = user_values(parameters, true);
 
         values.extend(encoded_values);
     }

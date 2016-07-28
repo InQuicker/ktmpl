@@ -3,6 +3,7 @@ use std::error::Error;
 use std::str::FromStr;
 
 use base64::encode;
+use clap::Values;
 use yaml::Yaml;
 
 pub struct Parameter {
@@ -117,26 +118,23 @@ impl FromStr for ParameterType {
     }
 }
 
-pub fn user_values(parameters: Vec<String>, base64_encoded: bool) -> Result<UserValues, String> {
+pub fn user_values(mut parameters: Values, base64_encoded: bool) -> UserValues {
     let mut user_values = UserValues::new();
 
-    for parameter in parameters {
-        let mut parts: Vec<String> = parameter.split('=').map(|s| s.to_string()).collect();
-
-        if parts.len() < 2 {
-            return Err("Parameters must be supplied in the form KEY=VALUE.".to_string());
-        } else {
-            let key = parts.remove(0);
-            let value = parts.join("=");
+    loop {
+        if let Some(name) = parameters.next() {
+            let value = parameters.next().expect("Parameter was missing its value.");
 
             let user_value = UserValue {
                 base64_encoded: base64_encoded,
-                value: value,
+                value: value.to_string(),
             };
 
-            user_values.insert(key, user_value);
+            user_values.insert(name.to_string(), user_value);
+        } else {
+            break;
         }
     }
 
-    Ok(user_values)
+    user_values
 }
