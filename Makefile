@@ -4,7 +4,7 @@ all: dist
 
 .PHONY: clean
 clean:
-	rm dist/*
+	rm -f dist/*
 	cargo clean
 
 target/release/ktmpl:
