@@ -33,6 +33,7 @@ fn real_main() -> Result<(), String> {
         .version(env!("CARGO_PKG_VERSION"))
         .about("Produces a Kubernetes manifest from a parameterized template")
         .setting(AppSettings::ArgRequiredElseHelp)
+        .setting(AppSettings::AllowLeadingHyphen)
         .arg(
             Arg::with_name("template")
                 .help("Path to the template file to be processed")
