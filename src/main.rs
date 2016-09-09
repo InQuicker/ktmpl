@@ -1,14 +1,13 @@
 extern crate base64;
 extern crate clap;
-#[macro_use]
-extern crate lazy_static;
+#[macro_use] extern crate lazy_static;
 extern crate regex;
 extern crate yaml_rust as yaml;
 
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, stdin};
 use std::process::exit;
 
 use clap::{App, AppSettings, Arg};
@@ -32,12 +31,10 @@ fn real_main() -> Result<(), String> {
     let matches = App::new("ktmpl")
         .version(env!("CARGO_PKG_VERSION"))
         .about("Produces a Kubernetes manifest from a parameterized template")
-        .setting(AppSettings::ArgRequiredElseHelp)
         .setting(AppSettings::AllowLeadingHyphen)
         .arg(
             Arg::with_name("template")
                 .help("Path to the template file to be processed")
-                .required(true)
                 .index(1)
         )
         .arg(
@@ -75,10 +72,15 @@ fn real_main() -> Result<(), String> {
         values.extend(encoded_values);
     }
 
-    let filename = matches.value_of("template").expect("template wasn't provided");
-    let mut file = try!(File::open(filename).map_err(|err| err.description().to_owned()));
     let mut template_data = String::new();
-    try!(file.read_to_string(&mut template_data).map_err(|err| err.description().to_owned()));
+    if matches.is_present("template") {
+        let filename = matches.value_of("template").expect("template wasn't provided");
+        let mut file = try!(File::open(filename).map_err(|err| err.description().to_owned()));
+        try!(file.read_to_string(&mut template_data).map_err(|err| err.description().to_owned()));
+    } else {
+        try!(stdin().read_to_string(&mut template_data).map_err(|err| err.description().to_owned()));
+    }
+
 
     let template = try!(Template::new(template_data, values));
 
