@@ -6,7 +6,7 @@ It is a very simple client-side implementation of the [Templates + Parameterizat
 ## Synopsis
 
 ```
-ktmpl 0.4.0
+ktmpl 0.5.0
 Produces a Kubernetes manifest from a parameterized template
 
 USAGE:
@@ -23,7 +23,7 @@ OPTIONS:
         Supplies a value for the named parameter
 
 ARGS:
-    <template>    Path to the template file to be processed
+    <template>    Path to the template file to be processed (use "-" to read from stdin)
 ```
 
 ## Usage
@@ -40,7 +40,6 @@ ktmpl example.yml --parameter MONGODB_PASSWORD secret
 
 Template parameters that have default values can be overridden with the same mechanism:
 
-
 ``` bash
 ktmpl example.yml --parameter MONGODB_USER carl --parameter MONGODB_PASSWORD secret
 ```
@@ -48,7 +47,7 @@ ktmpl example.yml --parameter MONGODB_USER carl --parameter MONGODB_PASSWORD sec
 The processed template will be output to stdout, suitable for piping into a `kubectl` command:
 
 ``` bash
-ktmpl example.yml --parameter MONGODB_PASSWORD=password | kubectl create -f -
+ktmpl example.yml --parameter MONGODB_PASSWORD password | kubectl create -f -
 ```
 
 If a parameter's `parameterType` is `base64`, the value passed for that parameter via `--parameter` will be Base64-encoded before being inserted into the template.
@@ -59,6 +58,12 @@ ktmpl example.yml --base64-parameter MONGODB_PASSWORD c2VjcmV0 | kubectl create 
 ```
 
 This can be handy when working with Kubernetes secrets, or anywhere else binary or opaque data is needed.
+
+It's also possible to supply the template via stdin instead of a named file by using `-` as the filename:
+
+``` bash
+cat example.yml | ktmpl - --parameter MONGODB_PASSWORD password | kubectl create -f -
+```
 
 ## Installing ktmpl
 

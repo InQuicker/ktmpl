@@ -31,10 +31,12 @@ fn real_main() -> Result<(), String> {
     let matches = App::new("ktmpl")
         .version(env!("CARGO_PKG_VERSION"))
         .about("Produces a Kubernetes manifest from a parameterized template")
+        .setting(AppSettings::ArgRequiredElseHelp)
         .setting(AppSettings::AllowLeadingHyphen)
         .arg(
             Arg::with_name("template")
-                .help("Path to the template file to be processed")
+                .help("Path to the template file to be processed (use \"-\" to read from stdin)")
+                .required(true)
                 .index(1)
         )
         .arg(
@@ -72,15 +74,17 @@ fn real_main() -> Result<(), String> {
         values.extend(encoded_values);
     }
 
+    let filename = matches.value_of("template").expect("template wasn't provided");
     let mut template_data = String::new();
-    if matches.is_present("template") {
-        let filename = matches.value_of("template").expect("template wasn't provided");
+
+    if filename == "-" {
+        try!(
+            stdin().read_to_string(&mut template_data).map_err(|err| err.description().to_owned())
+        );
+    } else {
         let mut file = try!(File::open(filename).map_err(|err| err.description().to_owned()));
         try!(file.read_to_string(&mut template_data).map_err(|err| err.description().to_owned()));
-    } else {
-        try!(stdin().read_to_string(&mut template_data).map_err(|err| err.description().to_owned()));
     }
-
 
     let template = try!(Template::new(template_data, values));
 
