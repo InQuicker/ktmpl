@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::str::FromStr;
 
 use base64::encode;
@@ -62,10 +61,7 @@ impl Parameter {
         let value = match user_values.get(&name) {
             Some(user_value) => {
                 if should_base64_encode(&parameter_type, &user_value) {
-                    match encode(&user_value.value) {
-                        Ok(v) => Some(v),
-                        Err(error) => return Err(format!("{}", error.description())),
-                    }
+                    Some(encode(user_value.value.as_bytes()))
                 } else {
                     Some(user_value.value.clone())
                 }
