@@ -15,3 +15,7 @@ clap = "2.11.3"
 lazy_static = "0.2.1"
 regex = "0.1.75"
 yaml-rust = "0.3.3"
+
+[[bin]]
+name = "ktmpl"
+doc = false

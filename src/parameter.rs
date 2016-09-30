@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use base64::encode;
-use clap::Values;
 use yaml::Yaml;
 
 pub struct Parameter {
@@ -22,25 +21,35 @@ pub enum ParameterType {
     String,
 }
 
-pub struct UserValue {
-    pub base64_encoded: bool,
-    pub value: String,
+/// The user-supplied value of a template parameter, either plain text or Base64-encoded.
+pub enum ParameterValue {
+    /// A plain text parameter value.
+    Plain(String),
+    /// A Base64-encoded parameter value.
+    Encoded(String),
 }
 
 pub type ParamMap = HashMap<String, Parameter>;
-pub type UserValues = HashMap<String, UserValue>;
 
-fn should_base64_encode(parameter_type: &Option<ParameterType>, user_value: &UserValue)
--> bool {
+/// A map of parameter names to user-supplied values of the parameters.
+pub type ParameterValues = HashMap<String, ParameterValue>;
+
+fn maybe_base64_encode(parameter_type: &Option<ParameterType>, user_value: &ParameterValue) -> String {
     if parameter_type.is_none() || parameter_type.as_ref().unwrap() != &ParameterType::Base64 {
-        return false;
+        return match *user_value {
+            ParameterValue::Plain(ref value) => value.clone(),
+            ParameterValue::Encoded(ref value) => value.clone(),
+        };
     }
 
-    !user_value.base64_encoded
+    match *user_value {
+        ParameterValue::Plain(ref value) => encode(value.as_bytes()),
+        ParameterValue::Encoded(ref value) => value.clone(),
+    }
 }
 
 impl Parameter {
-    pub fn new(yaml: &Yaml, user_values: &UserValues) -> Result<Self, String> {
+    pub fn new(yaml: &Yaml, user_values: &ParameterValues) -> Result<Self, String> {
         let description = match yaml["description"] {
             Yaml::String(ref description) => Some(description.clone()),
             _ => None,
@@ -59,13 +68,7 @@ impl Parameter {
         };
         let required = yaml["required"].as_bool().unwrap_or(false);
         let value = match user_values.get(&name) {
-            Some(user_value) => {
-                if should_base64_encode(&parameter_type, &user_value) {
-                    Some(encode(user_value.value.as_bytes()))
-                } else {
-                    Some(user_value.value.clone())
-                }
-            }
+            Some(user_value) => Some(maybe_base64_encode(&parameter_type, &user_value)),
             None => match yaml["value"] {
                 Yaml::Boolean(ref value)  => Some(format!("{}", value)),
                 Yaml::Integer(ref value) => Some(format!("{}", value)),
@@ -112,25 +115,4 @@ impl FromStr for ParameterType {
             _ => Err("parameterType must be base64, bool, int, or string.".to_owned()),
         }
     }
-}
-
-pub fn user_values(mut parameters: Values, base64_encoded: bool) -> UserValues {
-    let mut user_values = UserValues::new();
-
-    loop {
-        if let Some(name) = parameters.next() {
-            let value = parameters.next().expect("Parameter was missing its value.");
-
-            let user_value = UserValue {
-                base64_encoded: base64_encoded,
-                value: value.to_string(),
-            };
-
-            user_values.insert(name.to_string(), user_value);
-        } else {
-            break;
-        }
-    }
-
-    user_values
 }

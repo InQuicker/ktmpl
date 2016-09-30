@@ -2,17 +2,38 @@ use std::error::Error;
 
 use yaml::{EmitError, Yaml, YamlEmitter, YamlLoader};
 
-use parameter::{ParamMap, Parameter, UserValues};
+use parameter::{ParamMap, Parameter, ParameterValues};
 use processor::process_yaml;
 
+/// A Kubernetes manifest template and the values for each of its parameters.
 pub struct Template {
-    pub objects: Vec<Yaml>,
-    pub param_map: ParamMap,
+    objects: Vec<Yaml>,
+    param_map: ParamMap,
 }
 
 impl Template {
-    pub fn new(string: String, user_values: UserValues) -> Result<Self, String> {
-        let docs = try!(YamlLoader::load_from_str(&string).map_err(|err| err.description().to_owned()));
+    /// Creates a new template.
+    ///
+    /// # Parameters
+    ///
+    /// * template_contents: The YAML template file's contents.
+    /// * parameter_values: A map of the template's parameters and the user-supplied values for
+    ///   each.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    ///
+    /// * There was more than one YAML document present in the template contents.
+    /// * The YAML document did not contain an "objects" key or it was not an array value.
+    /// * The YAML document did not contain a "parameters" key or it was not an array value.
+    /// * One of the parameters doesn't have a "name" key.
+    /// * One of the parameters specifies an invalid "parameterType".
+    /// * One of the parameters requires a value which wasn't supplied.
+    pub fn new(template_contents: String, parameter_values: ParameterValues)
+    -> Result<Self, String> {
+        let docs = try!(YamlLoader::load_from_str(&template_contents)
+            .map_err(|err| err.description().to_owned()));
 
         if docs.len() != 1 {
             return Err("Only one YAML document can be present in the template.".to_owned());
@@ -37,7 +58,7 @@ impl Template {
         };
 
         for parameter_spec in parameter_specs {
-            let parameter = try!(Parameter::new(parameter_spec, &user_values));
+            let parameter = try!(Parameter::new(parameter_spec, &parameter_values));
 
             param_map.insert(parameter.name.clone(), parameter);
         }
@@ -48,9 +69,14 @@ impl Template {
         })
     }
 
+    /// Interpolates the parameters' values into the YAML template, returning the results.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the processed template was not valid YAML.
     pub fn process(mut self) -> Result<String, String> {
         for object in self.objects.iter_mut() {
-            try!(process_yaml(object, &self.param_map));
+            process_yaml(object, &self.param_map);
         }
 
         dump(self.objects)

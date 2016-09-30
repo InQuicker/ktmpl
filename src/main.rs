@@ -1,8 +1,5 @@
-extern crate base64;
 extern crate clap;
-#[macro_use] extern crate lazy_static;
-extern crate regex;
-extern crate yaml_rust as yaml;
+extern crate ktmpl;
 
 use std::collections::HashMap;
 use std::error::Error;
@@ -10,14 +7,9 @@ use std::fs::File;
 use std::io::{Read, stdin};
 use std::process::exit;
 
-use clap::{App, AppSettings, Arg};
+use clap::{App, AppSettings, Arg, Values};
 
-use parameter::user_values;
-use template::Template;
-
-mod parameter;
-mod processor;
-mod template;
+use ktmpl::{Template, ParameterValue, ParameterValues};
 
 fn main() {
     if let Err(error) = real_main() {
@@ -64,12 +56,12 @@ fn real_main() -> Result<(), String> {
         .get_matches();
 
     let mut values = match matches.values_of("parameter") {
-        Some(parameters) => user_values(parameters, false),
+        Some(parameters) => parameter_values(parameters, false),
         None => HashMap::new(),
     };
 
     if let Some(parameters) = matches.values_of("base64-parameter") {
-        let encoded_values = user_values(parameters, true);
+        let encoded_values = parameter_values(parameters, true);
 
         values.extend(encoded_values);
     }
@@ -96,4 +88,26 @@ fn real_main() -> Result<(), String> {
         }
         Err(error) => Err(error),
     }
+}
+
+fn parameter_values(mut parameters: Values, base64_encoded: bool) -> ParameterValues {
+    let mut parameter_values = ParameterValues::new();
+
+    loop {
+        if let Some(name) = parameters.next() {
+            let value = parameters.next().expect("Parameter was missing its value.");
+
+            let parameter_value = if base64_encoded {
+                ParameterValue::Encoded(value.to_string())
+            } else {
+                ParameterValue::Plain(value.to_string())
+            };
+
+            parameter_values.insert(name.to_string(), parameter_value);
+        } else {
+            break;
+        }
+    }
+
+    parameter_values
 }
