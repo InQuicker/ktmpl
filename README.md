@@ -67,6 +67,12 @@ cat example.yml | ktmpl - --parameter MONGODB_PASSWORD password | kubectl create
 
 ## Installing ktmpl
 
+### Homebrew
+
+```
+brew install ktmpl
+```
+
 ### Cargo
 
 ```
