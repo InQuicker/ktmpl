@@ -122,35 +122,46 @@ fn parse_yaml(doc: &yaml::Yaml, primary_key: &str) -> ParameterValues {
   match doc {
     &yaml::Yaml::Hash(ref h) => {
       for (key, value) in h {
-        let pk1 = String::from(primary_key) + key.as_str().unwrap();
+        let combined_key = primary_key.to_string() + key.as_str().unwrap();
         match value {
           &yaml::Yaml::Hash(ref h) => {
+            // Found a nested hash of values, prepend the parent key to each sub-key with '_'
+            // For example:
+            // ---
+            // MONGODB:
+            //  USER: mongodb
+            //  PASSWORD: secret
+            //
+            // Produces:
+            // MONGODB_USER: mongodb
+            // MONGODB_PASSWROD: secret
+            //
             for (key, value) in h {
-              let seperator = "_";
-              let sub_key = pk1.to_string() + seperator + key.as_str().unwrap();
+              let sub_key = combined_key.to_string() + "_" + key.as_str().unwrap();
               let sub_values = parse_yaml(value, &sub_key);
               param_values.extend(sub_values);
             }
           },
           &yaml::Yaml::String(ref s) => {
             let pv = ParameterValue::Plain(s.to_string());
-            param_values.insert(pk1,pv);
+            param_values.insert(combined_key,pv);
           },
           &yaml::Yaml::Integer(ref i) => {
             let pv = ParameterValue::Plain(i.to_string());
-            param_values.insert(pk1,pv);
+            param_values.insert(combined_key,pv);
           },
           &yaml::Yaml::Real(ref r) => {
             let pv = ParameterValue::Plain(r.to_string());
-            param_values.insert(pk1,pv);
+            param_values.insert(combined_key,pv);
           },
           &yaml::Yaml::Boolean(ref b) => {
             let pv = ParameterValue::Plain(b.to_string());
-            param_values.insert(pk1,pv);
+            param_values.insert(combined_key,pv);
           },
           _ => {
-            // value not currently supported
-            println!("{:?} - Value not covered", value);
+            // Value type not currently supported
+            // Currently unsuported types include:
+            // Array, Alias and None
           }
         }
       }
@@ -160,8 +171,7 @@ fn parse_yaml(doc: &yaml::Yaml, primary_key: &str) -> ParameterValues {
       param_values.insert(primary_key.to_string(),pv);
     },
     _ => {
-      // Pattern not convered - document
-      println!("{:?} - Key not covered", doc);
+      // Key type not convered - document
     }
   }
   param_values
