@@ -19,6 +19,8 @@ FLAGS:
 OPTIONS:
     -b, --base64-parameter <NAME> <VALUE>
         Same as --parameter, but for values already encoded in Base64
+    -f, --param-file <FILENAME>...
+            Supplies a Yaml file defining any named parameters
     -p, --parameter <NAME> <VALUE>
         Supplies a value for the named parameter
 
@@ -31,11 +33,24 @@ ARGS:
 Run `ktmpl TEMPLATE` where TEMPLATE is a path to a Kubernetes manifest template in YAML format.
 The included [example.yml](example.yml) is a working example template.
 
-To provide values for template parameters, use the `--parameter` option to supply key-value pairs.
+To provide values for template parameters, use either the `--parameter` or the `--parameter-file` option to supply key-value pairs.
+Using the `--parameter` option:
 Using the provided example.yml, this would mean:
 
 ``` bash
 ktmpl example.yml --parameter MONGODB_PASSWORD secret
+```
+
+Using the `--parameter-file` option:
+
+```
+ktmpl example.yml --parameter-file params.yaml
+```
+
+The parameter-file also supports a nested hash, keys will be concatenated together witha `_`:
+
+```
+ktmpl example.yml --parameter-file param_hash.yaml
 ```
 
 Template parameters that have default values can be overridden with the same mechanism:

@@ -1,5 +1,6 @@
 extern crate clap;
 extern crate ktmpl;
+extern crate yaml_rust as yaml;
 
 use std::collections::HashMap;
 use std::error::Error;
@@ -53,6 +54,17 @@ fn real_main() -> Result<(), String> {
                 .number_of_values(2)
                 .value_names(&["NAME", "VALUE"])
         )
+        .arg(
+            Arg::with_name("parameter-file")
+                .help("Supplies a Yaml file defining any named parameters")
+                .next_line_help(true)
+                .long("param-file")
+                .short("f")
+                .multiple(true)
+                .takes_value(true)
+                .number_of_values(1)
+                .value_names(&["FILENAME"])
+        )
         .get_matches();
 
     let mut values = match matches.values_of("parameter") {
@@ -64,6 +76,20 @@ fn real_main() -> Result<(), String> {
         let encoded_values = parameter_values(parameters, true);
 
         values.extend(encoded_values);
+    }
+
+    if let Some(files) = matches.values_of("parameter-file") {
+      for file in files {
+        let mut file_handle = try!(File::open(file).map_err(|err| err.description().to_owned()));
+        let mut contents = String::new();
+        file_handle.read_to_string(&mut contents).unwrap();
+        let docs = yaml::YamlLoader::load_from_str(&contents).unwrap();
+        for doc in &docs {
+          let primary_key = "";
+          let param_values = parse_yaml(doc, primary_key);
+          values.extend(param_values);
+        }
+      }
     }
 
     let filename = matches.value_of("template").expect("template wasn't provided");
@@ -88,6 +114,57 @@ fn real_main() -> Result<(), String> {
         }
         Err(error) => Err(error),
     }
+}
+
+fn parse_yaml(doc: &yaml::Yaml, primary_key: &str) -> ParameterValues {
+  let mut param_values = ParameterValues::new();
+
+  match doc {
+    &yaml::Yaml::Hash(ref h) => {
+      for (key, value) in h {
+        let pk1 = String::from(primary_key) + key.as_str().unwrap();
+        match value {
+          &yaml::Yaml::Hash(ref h) => {
+            for (key, value) in h {
+              let seperator = "_";
+              let sub_key = pk1.to_string() + seperator + key.as_str().unwrap();
+              let sub_values = parse_yaml(value, &sub_key);
+              param_values.extend(sub_values);
+            }
+          },
+          &yaml::Yaml::String(ref s) => {
+            let pv = ParameterValue::Plain(s.to_string());
+            param_values.insert(pk1,pv);
+          },
+          &yaml::Yaml::Integer(ref i) => {
+            let pv = ParameterValue::Plain(i.to_string());
+            param_values.insert(pk1,pv);
+          },
+          &yaml::Yaml::Real(ref r) => {
+            let pv = ParameterValue::Plain(r.to_string());
+            param_values.insert(pk1,pv);
+          },
+          &yaml::Yaml::Boolean(ref b) => {
+            let pv = ParameterValue::Plain(b.to_string());
+            param_values.insert(pk1,pv);
+          },
+          _ => {
+            // value not currently supported
+            println!("{:?} - Value not covered", value);
+          }
+        }
+      }
+    },
+    &yaml::Yaml::String(ref s) => {
+      let pv = ParameterValue::Plain(s.to_string());
+      param_values.insert(primary_key.to_string(),pv);
+    },
+    _ => {
+      // Pattern not convered - document
+      println!("{:?} - Key not covered", doc);
+    }
+  }
+  param_values
 }
 
 fn parameter_values(mut parameters: Values, base64_encoded: bool) -> ParameterValues {
