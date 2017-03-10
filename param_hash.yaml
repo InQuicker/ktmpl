@@ -1,0 +1,6 @@
+---
+MONGODB:
+  USER: bar
+  PASSWORD: secret
+REPLICA_COUNT: 2
+
