@@ -49,11 +49,11 @@ fn process_string(string: &mut String, parameters: &ParamMap) -> Option<Yaml> {
     }
 
     let interpolate = |captures: &Captures| -> String {
-        let key = captures.at(1).expect("Failed to extract regex capture group.");
+        let key = captures.get(1).expect("Failed to extract regex capture group.");
 
-        match parameters.get(key) {
+        match parameters.get(key.as_str()) {
             Some(parameter) => parameter.value.clone().unwrap_or("~".to_owned()),
-            None => captures.at(0).expect("Failed to extract regex match.").to_owned(),
+            None => captures.get(0).expect("Failed to extract regex match.").as_str().to_owned(),
         }
     };
 
@@ -70,6 +70,6 @@ fn process_string(string: &mut String, parameters: &ParamMap) -> Option<Yaml> {
     } else if contains_literal_replacement && !contains_string_replacement {
         Some(Yaml::from_str(&final_replacement))
     } else {
-        Some(Yaml::String(final_replacement))
+        Some(Yaml::String(final_replacement.to_string()))
     }
 }

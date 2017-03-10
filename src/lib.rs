@@ -51,18 +51,18 @@
 //!     assert_eq!(
 //!         processed_template.lines().map(|l| l.trim_right()).collect::<Vec<&str>>().join("\n"),
 //!         r#"---
-//! "apiVersion": "v1"
-//! "kind": "Service"
-//! "metadata":
-//!   "name": "mongo"
-//! "spec":
-//!   "ports":
+//! apiVersion: v1
+//! kind: Service
+//! metadata:
+//!   name: mongo
+//! spec:
+//!   ports:
 //!     -
-//!       "name": "db"
-//!       "protocol": "TCP"
-//!       "targetPort": 3000
-//!   "selector":
-//!     "name": "mongo""#
+//!       name: db
+//!       protocol: TCP
+//!       targetPort: 3000
+//!   selector:
+//!     name: mongo"#
 //!     );
 //! }
 //! ```
