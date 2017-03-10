@@ -35,6 +35,7 @@ The included [example.yml](example.yml) is a working example template.
 
 To provide values for template parameters, use either the `--parameter` or the `--parameter-file` option to supply key-value pairs.
 Using the `--parameter` option:
+
 Using the provided example.yml, this would mean:
 
 ``` bash
