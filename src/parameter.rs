@@ -63,7 +63,7 @@ impl Parameter {
             _ => return Err("Parameters must have a \"name\" field.".to_owned()),
         };
         let parameter_type = match yaml["parameterType"].as_str() {
-            Some(ref parameter_type) => Some(try!(parameter_type.parse())),
+            Some(ref parameter_type) => Some(parameter_type.parse()?),
             None => None,
         };
         let required = yaml["required"].as_bool().unwrap_or(false);

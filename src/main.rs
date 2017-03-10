@@ -70,15 +70,13 @@ fn real_main() -> Result<(), String> {
     let mut template_data = String::new();
 
     if filename == "-" {
-        try!(
-            stdin().read_to_string(&mut template_data).map_err(|err| err.description().to_owned())
-        );
+        stdin().read_to_string(&mut template_data).map_err(|err| err.description().to_owned())?;
     } else {
-        let mut file = try!(File::open(filename).map_err(|err| err.description().to_owned()));
-        try!(file.read_to_string(&mut template_data).map_err(|err| err.description().to_owned()));
+        let mut file = File::open(filename).map_err(|err| err.description().to_owned())?;
+        file.read_to_string(&mut template_data).map_err(|err| err.description().to_owned())?;
     }
 
-    let template = try!(Template::new(template_data, values));
+    let template = Template::new(template_data, values)?;
 
     match template.process() {
         Ok(manifests) => {

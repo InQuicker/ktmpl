@@ -32,8 +32,8 @@ impl Template {
     /// * One of the parameters requires a value which wasn't supplied.
     pub fn new(template_contents: String, parameter_values: ParameterValues)
     -> Result<Self, String> {
-        let docs = try!(YamlLoader::load_from_str(&template_contents)
-            .map_err(|err| err.description().to_owned()));
+        let docs = YamlLoader::load_from_str(&template_contents)
+            .map_err(|err| err.description().to_owned())?;
 
         if docs.len() != 1 {
             return Err("Only one YAML document can be present in the template.".to_owned());
@@ -58,7 +58,7 @@ impl Template {
         };
 
         for parameter_spec in parameter_specs {
-            let parameter = try!(Parameter::new(parameter_spec, &parameter_values));
+            let parameter = Parameter::new(parameter_spec, &parameter_values)?;
 
             param_map.insert(parameter.name.clone(), parameter);
         }
@@ -90,12 +90,12 @@ fn dump(objects: Vec<Yaml>) -> Result<String, String> {
     for (i, object) in objects.iter().enumerate() {
         {
             let mut emitter = YamlEmitter::new(&mut manifests);
-            try!(emitter.dump(&object).map_err(|error| {
+            emitter.dump(&object).map_err(|error| {
                 match error {
                     EmitError::FmtError(error) => format!("{}", error),
                     EmitError::BadHashmapKey => "Bad hashmap key in YAML structure.".to_owned(),
                 }
-            }));
+            })?;
         }
 
         if i != last {
