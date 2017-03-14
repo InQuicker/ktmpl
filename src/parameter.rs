@@ -4,6 +4,7 @@ use std::str::FromStr;
 use base64::encode;
 use yaml::Yaml;
 
+#[derive(Debug)]
 pub struct Parameter {
     pub description: Option<String>,
     pub display_name: Option<String>,
@@ -13,7 +14,7 @@ pub struct Parameter {
     pub value: Option<String>,
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum ParameterType {
     Base64,
     Bool,
@@ -22,6 +23,7 @@ pub enum ParameterType {
 }
 
 /// The user-supplied value of a template parameter, either plain text or Base64-encoded.
+#[derive(Debug)]
 pub enum ParameterValue {
     /// A plain text parameter value.
     Plain(String),
@@ -63,7 +65,7 @@ impl Parameter {
             _ => return Err("Parameters must have a \"name\" field.".to_owned()),
         };
         let parameter_type = match yaml["parameterType"].as_str() {
-            Some(ref parameter_type) => Some(try!(parameter_type.parse())),
+            Some(ref parameter_type) => Some(parameter_type.parse()?),
             None => None,
         };
         let required = yaml["required"].as_bool().unwrap_or(false);

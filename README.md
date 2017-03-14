@@ -6,7 +6,7 @@ It is a very simple client-side implementation of the [Templates + Parameterizat
 ## Synopsis
 
 ```
-ktmpl 0.5.0
+ktmpl 0.6.0
 Produces a Kubernetes manifest from a parameterized template
 
 USAGE:
@@ -18,11 +18,13 @@ FLAGS:
 
 OPTIONS:
     -b, --base64-parameter <NAME> <VALUE>
-        Same as --parameter, but for values already encoded in Base64
+            Same as --parameter, but for values already encoded in Base64
     -f, --param-file <FILENAME>...
             Supplies a Yaml file defining any named parameters
     -p, --parameter <NAME> <VALUE>
-        Supplies a value for the named parameter
+            Supplies a value for the named parameter
+    -s, --secret <NAME> <NAMESPACE>
+            A secret to Base64 encode after parameter interpolation
 
 ARGS:
     <template>    Path to the template file to be processed (use "-" to read from stdin)
@@ -74,6 +76,18 @@ ktmpl example.yml --base64-parameter MONGODB_PASSWORD c2VjcmV0 | kubectl create 
 ```
 
 This can be handy when working with Kubernetes secrets, or anywhere else binary or opaque data is needed.
+
+When working with Kubernetes secrets with values that _contain_ a parameter as well as literal text, such as a config file with passwords in it, the `--secret` option is useful.
+For example, using the provided [secret_example.yml](secret_example.yml) template:
+
+``` bash
+ktmpl secret_example.yml --parameter PASSWORD narble --secret webapp default
+```
+
+"webapp" is the name of the secret and "default" is the namespace of the secret.
+This will cause ktmpl to Base64 encode every value in the named secret's data hash after the normal parameter interpolation step.
+When using the `--secret` option, you probably don't want to use `base64` as the `parameterType` for any parameters within the secret, since the entire value will be Base64 encoded after interpolation.
+If a Kubernetes secret named with the `--secret` option is not found in the template, ktmpl will exit with an error.
 
 It's also possible to supply the template via stdin instead of a named file by using `-` as the filename:
 
