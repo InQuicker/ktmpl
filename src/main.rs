@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate ktmpl;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fs::File;
 use std::io::{Read, stdin};
@@ -9,7 +9,7 @@ use std::process::exit;
 
 use clap::{App, AppSettings, Arg, Values};
 
-use ktmpl::{Template, ParameterValue, ParameterValues};
+use ktmpl::{Template, ParameterValue, ParameterValues, Secret};
 
 fn main() {
     if let Err(error) = real_main() {
@@ -53,6 +53,17 @@ fn real_main() -> Result<(), String> {
                 .number_of_values(2)
                 .value_names(&["NAME", "VALUE"])
         )
+        .arg(
+            Arg::with_name("secret")
+                .help("A secret to Base64 encode after parameter interpolation")
+                .next_line_help(true)
+                .long("secret")
+                .short("s")
+                .multiple(true)
+                .takes_value(true)
+                .number_of_values(2)
+                .value_names(&["NAME", "NAMESPACE"])
+        )
         .get_matches();
 
     let mut values = match matches.values_of("parameter") {
@@ -66,6 +77,11 @@ fn real_main() -> Result<(), String> {
         values.extend(encoded_values);
     }
 
+    let secrets = matches
+        .values_of("secret")
+        .and_then(|secrets| Some(secret_values(secrets)))
+        .or(None);
+
     let filename = matches.value_of("template").expect("template wasn't provided");
     let mut template_data = String::new();
 
@@ -76,7 +92,7 @@ fn real_main() -> Result<(), String> {
         file.read_to_string(&mut template_data).map_err(|err| err.description().to_owned())?;
     }
 
-    let template = Template::new(template_data, values)?;
+    let template = Template::new(template_data, values, secrets)?;
 
     match template.process() {
         Ok(manifests) => {
@@ -108,4 +124,23 @@ fn parameter_values(mut parameters: Values, base64_encoded: bool) -> ParameterVa
     }
 
     parameter_values
+}
+
+fn secret_values(mut secret_parameters: Values) -> HashSet<Secret> {
+    let mut secret_values = HashSet::new();
+
+    loop {
+        if let Some(name) = secret_parameters.next() {
+            let namespace = secret_parameters.next().expect("Secret was missing its namespace.");
+
+            secret_values.insert(Secret {
+                name: name.to_string(),
+                namespace: namespace.to_string(),
+            });
+        } else {
+            break;
+        }
+    }
+
+    secret_values
 }
