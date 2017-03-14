@@ -80,7 +80,7 @@ extern crate yaml_rust as yaml;
 
 pub use template::Template;
 pub use parameter::{ParameterValue, ParameterValues};
-pub use secret::Secret;
+pub use secret::{Secret, Secrets};
 
 mod parameter;
 mod processor;
@@ -89,9 +89,7 @@ mod template;
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
-    use super::{ParameterValue, ParameterValues, Secret, Template};
+    use super::{ParameterValue, ParameterValues, Secret, Secrets, Template};
 
     #[test]
     fn encode_secrets() {
@@ -125,7 +123,7 @@ parameters:
             ParameterValue::Plain("narble".to_string()),
         );
 
-        let mut secrets = HashSet::new();
+        let mut secrets = Secrets::new();
 
         secrets.insert(Secret {
             name: "webapp".to_string(),
@@ -180,7 +178,7 @@ parameters:
             ParameterValue::Plain("foo".to_string()),
         );
 
-        let mut secrets = HashSet::new();
+        let mut secrets = Secrets::new();
 
         secrets.insert(Secret {
             name: "ghost".to_string(),

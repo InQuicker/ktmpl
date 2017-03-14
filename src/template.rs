@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::error::Error;
 
 use base64::encode;
@@ -7,14 +6,14 @@ use yaml::{EmitError, Yaml, YamlEmitter, YamlLoader};
 
 use parameter::{ParamMap, Parameter, ParameterValues};
 use processor::process_yaml;
-use secret::Secret;
+use secret::{Secret, Secrets};
 
 /// A Kubernetes manifest template and the values for each of its parameters.
 #[derive(Debug)]
 pub struct Template {
     objects: Vec<Yaml>,
     param_map: ParamMap,
-    secrets: Option<HashSet<Secret>>,
+    secrets: Option<Secrets>,
 }
 
 impl Template {
@@ -44,7 +43,7 @@ impl Template {
     pub fn new(
         template_contents: String,
         parameter_values: ParameterValues,
-        secrets: Option<HashSet<Secret>>,
+        secrets: Option<Secrets>,
     ) -> Result<Self, String> {
         let docs = YamlLoader::load_from_str(&template_contents)
             .map_err(|err| err.description().to_owned())?;
@@ -114,7 +113,7 @@ impl Template {
 
 }
 
-fn maybe_base64_encode_secret(secrets: &HashSet<Secret>, object: &mut Yaml)
+fn maybe_base64_encode_secret(secrets: &Secrets, object: &mut Yaml)
 -> Result<bool, String> {
     let mut hash = match object {
         &mut Yaml::Hash(ref mut hash) => hash,

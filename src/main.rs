@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate ktmpl;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 use std::error::Error;
 use std::fs::File;
 use std::io::{Read, stdin};
@@ -9,7 +9,7 @@ use std::process::exit;
 
 use clap::{App, AppSettings, Arg, Values};
 
-use ktmpl::{Template, ParameterValue, ParameterValues, Secret};
+use ktmpl::{Template, ParameterValue, ParameterValues, Secret, Secrets};
 
 fn main() {
     if let Err(error) = real_main() {
@@ -126,14 +126,14 @@ fn parameter_values(mut parameters: Values, base64_encoded: bool) -> ParameterVa
     parameter_values
 }
 
-fn secret_values(mut secret_parameters: Values) -> HashSet<Secret> {
-    let mut secret_values = HashSet::new();
+fn secret_values(mut secret_parameters: Values) -> Secrets {
+    let mut secrets = Secrets::new();
 
     loop {
         if let Some(name) = secret_parameters.next() {
             let namespace = secret_parameters.next().expect("Secret was missing its namespace.");
 
-            secret_values.insert(Secret {
+            secrets.insert(Secret {
                 name: name.to_string(),
                 namespace: namespace.to_string(),
             });
@@ -142,5 +142,5 @@ fn secret_values(mut secret_parameters: Values) -> HashSet<Secret> {
         }
     }
 
-    secret_values
+    secrets
 }
