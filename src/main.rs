@@ -1,6 +1,5 @@
 extern crate clap;
 extern crate ktmpl;
-extern crate yaml_rust as yaml;
 
 use std::collections::{HashMap};
 use std::error::Error;
@@ -10,7 +9,7 @@ use std::process::exit;
 
 use clap::{App, AppSettings, Arg, Values};
 
-use ktmpl::{Template, ParameterValue, ParameterValues, Secret, Secrets};
+use ktmpl::{Template, ParameterValue, ParameterValues, ParameterFile, Secret, Secrets};
 
 fn main() {
     if let Err(error) = real_main() {
@@ -69,7 +68,7 @@ fn real_main() -> Result<(), String> {
             Arg::with_name("parameter-file")
                 .help("Supplies a Yaml file defining any named parameters")
                 .next_line_help(true)
-                .long("param-file")
+                .long("parameter-file")
                 .short("f")
                 .multiple(true)
                 .takes_value(true)
@@ -78,10 +77,18 @@ fn real_main() -> Result<(), String> {
         )
         .get_matches();
 
-    let mut values = match matches.values_of("parameter") {
-        Some(parameters) => parameter_values(parameters, false),
-        None => HashMap::new(),
-    };
+    let mut values = HashMap::new();
+
+    // Parse Parameter files first, passing command line parameters
+    // should override any values supplied via a file
+    if let Some(files) = matches.values_of("parameter-file") {
+        let params_from_file = parameter_files(files);
+        values.extend(params_from_file);
+    }
+
+    if let Some(parameters) = matches.values_of("parameter") {
+        values.extend(parameter_values(parameters, false));
+    }
 
     if let Some(parameters) = matches.values_of("base64-parameter") {
         let encoded_values = parameter_values(parameters, true);
@@ -93,20 +100,6 @@ fn real_main() -> Result<(), String> {
         .values_of("secret")
         .and_then(|secrets| Some(secret_values(secrets)))
         .or(None);
-
-    if let Some(files) = matches.values_of("parameter-file") {
-      for file in files {
-        let mut file_handle = try!(File::open(file).map_err(|err| err.description().to_owned()));
-        let mut contents = String::new();
-        file_handle.read_to_string(&mut contents).unwrap();
-        let docs = yaml::YamlLoader::load_from_str(&contents).unwrap();
-        for doc in &docs {
-          let primary_key = "";
-          let param_values = parse_yaml(doc, primary_key);
-          values.extend(param_values);
-        }
-      }
-    }
 
     let filename = matches.value_of("template").expect("template wasn't provided");
     let mut template_data = String::new();
@@ -130,65 +123,18 @@ fn real_main() -> Result<(), String> {
     }
 }
 
-fn parse_yaml(doc: &yaml::Yaml, primary_key: &str) -> ParameterValues {
-  let mut param_values = ParameterValues::new();
+fn parameter_files(mut param_files: Values) -> ParameterValues {
+    let mut parameter_values = ParameterValues::new();
 
-  match doc {
-    &yaml::Yaml::Hash(ref h) => {
-      for (key, value) in h {
-        let combined_key = primary_key.to_string() + key.as_str().unwrap();
-        match value {
-          &yaml::Yaml::Hash(ref h) => {
-            // Found a nested hash of values, prepend the parent key to each sub-key with '_'
-            // For example:
-            // ---
-            // MONGODB:
-            //  USER: mongodb
-            //  PASSWORD: secret
-            //
-            // Produces:
-            // MONGODB_USER: mongodb
-            // MONGODB_PASSWROD: secret
-            //
-            for (key, value) in h {
-              let sub_key = combined_key.to_string() + "_" + key.as_str().unwrap();
-              let sub_values = parse_yaml(value, &sub_key);
-              param_values.extend(sub_values);
-            }
-          },
-          &yaml::Yaml::String(ref s) => {
-            let pv = ParameterValue::Plain(s.to_string());
-            param_values.insert(combined_key,pv);
-          },
-          &yaml::Yaml::Integer(ref i) => {
-            let pv = ParameterValue::Plain(i.to_string());
-            param_values.insert(combined_key,pv);
-          },
-          &yaml::Yaml::Real(ref r) => {
-            let pv = ParameterValue::Plain(r.to_string());
-            param_values.insert(combined_key,pv);
-          },
-          &yaml::Yaml::Boolean(ref b) => {
-            let pv = ParameterValue::Plain(b.to_string());
-            param_values.insert(combined_key,pv);
-          },
-          _ => {
-            // Value type not currently supported
-            // Currently unsuported types include:
-            // Array, Alias and None
-          }
+    loop {
+        if let Some(f) = param_files.next() {
+            let param_file = ParameterFile::from_file(&f).unwrap();
+            parameter_values.extend(param_file.parameters);
+        } else {
+            break;
         }
-      }
-    },
-    &yaml::Yaml::String(ref s) => {
-      let pv = ParameterValue::Plain(s.to_string());
-      param_values.insert(primary_key.to_string(),pv);
-    },
-    _ => {
-      // Key type not convered - document
     }
-  }
-  param_values
+    parameter_values
 }
 
 fn parameter_values(mut parameters: Values, base64_encoded: bool) -> ParameterValues {

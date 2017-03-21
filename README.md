@@ -50,11 +50,7 @@ Using the `--parameter-file` option:
 ktmpl example.yml --parameter-file params.yaml
 ```
 
-The parameter-file also supports a nested hash, keys will be concatenated together witha `_`:
-
-```
-ktmpl example.yml --parameter-file param_hash.yaml
-```
+If the same parameter is defined more than once, the last defined value will be used. Passing parameters on the command line `--parameter` will override any that are defined via the `--parameter-file` construct
 
 Template parameters that have default values can be overridden with the same mechanism:
 
