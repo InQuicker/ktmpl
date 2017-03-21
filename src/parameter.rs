@@ -1,8 +1,11 @@
 use std::collections::HashMap;
+use std::error::Error;
+use std::fs::File;
+use std::io::Read;
 use std::str::FromStr;
 
 use base64::encode;
-use yaml::Yaml;
+use yaml::{Yaml, YamlLoader};
 
 #[derive(Debug)]
 pub struct Parameter {
@@ -35,6 +38,47 @@ pub type ParamMap = HashMap<String, Parameter>;
 
 /// A map of parameter names to user-supplied values of the parameters.
 pub type ParameterValues = HashMap<String, ParameterValue>;
+
+/// Creates a `ParameterFile` from a file.
+pub fn parameter_values_from_file(file_path: &str) -> Result<ParameterValues, String> {
+    let mut file = File::open(file_path).map_err(|err| err.description().to_owned())?;
+
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).map_err(|err| err.description().to_owned())?;
+
+    let docs = YamlLoader::load_from_str(&contents)
+        .map_err(|err| err.description().to_owned())?;
+
+    let mut parameter_values = ParameterValues::new();
+
+    for doc in docs {
+        match doc {
+            Yaml::Hash(ref hash) => {
+                for (key, value) in hash {
+                    match *key {
+                        Yaml::String(ref key_string) => {
+                            match *value {
+                                Yaml::String(ref value_string) => {
+                                    parameter_values.insert(
+                                        key_string.to_string(),
+                                        ParameterValue::Plain(value_string.to_string()),
+                                    );
+                                }
+                                _ => return Err("Parameter values in paramter files must be strings.".to_string()),
+                            }
+                        }
+                        _ => return Err(
+                            "Parameters in parameter files must be strings.".to_string()
+                        ),
+                    }
+                }
+            }
+            _ => return Err("YAML documents in parameter files must be hashes.".to_string()),
+        }
+    }
+
+    Ok(parameter_values)
+}
 
 fn maybe_base64_encode(parameter_type: &Option<ParameterType>, user_value: &ParameterValue) -> String {
     if parameter_type.is_none() || parameter_type.as_ref().unwrap() != &ParameterType::Base64 {

@@ -1,5 +1,0 @@
----
-MONGODB_PASSWORD: secret
-MONGODB_USER: bar
-REPLICA_COUNT: 2
-

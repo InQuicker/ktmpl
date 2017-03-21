@@ -19,10 +19,10 @@ FLAGS:
 OPTIONS:
     -b, --base64-parameter <NAME> <VALUE>
             Same as --parameter, but for values already encoded in Base64
-    -f, --param-file <FILENAME>...
-            Supplies a Yaml file defining any named parameters
     -p, --parameter <NAME> <VALUE>
             Supplies a value for the named parameter
+    -f, --parameter-file <PARAMETER_FILE>...
+            Path to a YAML file with parameter values
     -s, --secret <NAME> <NAMESPACE>
             A secret to Base64 encode after parameter interpolation
 
@@ -35,10 +35,11 @@ ARGS:
 Run `ktmpl TEMPLATE` where TEMPLATE is a path to a Kubernetes manifest template in YAML format.
 The included [example.yml](example.yml) is a working example template.
 
-To provide values for template parameters, use either the `--parameter` or the `--parameter-file` option to supply key-value pairs.
-Using the `--parameter` option:
+To provide values for template parameters, use the `--parameter`, `--base64-parameter` or `--parameter-file` options.
 
-Using the provided example.yml, this would mean:
+The included `example.yml` and `params.yml` files are used in the following examples.
+
+Using the `--parameter` option:
 
 ``` bash
 ktmpl example.yml --parameter MONGODB_PASSWORD secret
@@ -47,12 +48,19 @@ ktmpl example.yml --parameter MONGODB_PASSWORD secret
 Using the `--parameter-file` option:
 
 ```
-ktmpl example.yml --parameter-file params.yaml
+ktmpl example.yml --parameter-file params.yml
 ```
 
-If the same parameter is defined more than once, the last defined value will be used. Passing parameters on the command line `--parameter` will override any that are defined via the `--parameter-file` construct
+A parameter file must contain one or more YAML documents.
+Each document must be a YAML hash with string keys and string values, corresponding to template
+parameters and their values, respectively.
 
-Template parameters that have default values can be overridden with the same mechanism:
+In parameter files, if the same parameter is defined more than once, the last defined value will be
+used.
+Parameter values supplied via the `--parameter` option will override any that are defined via
+parameter files.
+
+Template parameters that have default values can be overridden with the same mechanisms:
 
 ``` bash
 ktmpl example.yml --parameter MONGODB_USER carl --parameter MONGODB_PASSWORD secret
@@ -72,6 +80,7 @@ ktmpl example.yml --base64-parameter MONGODB_PASSWORD c2VjcmV0 | kubectl create 
 ```
 
 This can be handy when working with Kubernetes secrets, or anywhere else binary or opaque data is needed.
+Values provided via parameter files are always treated as plain strings, so the `--base64-parameter` option is required for values that are already Base64-encoded.
 
 When working with Kubernetes secrets with values that _contain_ a parameter as well as literal text, such as a config file with passwords in it, the `--secret` option is useful.
 For example, using the provided [secret_example.yml](secret_example.yml) template:

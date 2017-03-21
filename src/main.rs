@@ -9,7 +9,14 @@ use std::process::exit;
 
 use clap::{App, AppSettings, Arg, Values};
 
-use ktmpl::{Template, ParameterValue, ParameterValues, ParameterFile, Secret, Secrets};
+use ktmpl::{
+    ParameterValue,
+    ParameterValues,
+    Secret,
+    Secrets,
+    Template,
+    parameter_values_from_file,
+};
 
 fn main() {
     if let Err(error) = real_main() {
@@ -66,23 +73,22 @@ fn real_main() -> Result<(), String> {
         )
         .arg(
             Arg::with_name("parameter-file")
-                .help("Supplies a Yaml file defining any named parameters")
+                .help("Path to a YAML file with parameter values")
                 .next_line_help(true)
                 .long("parameter-file")
                 .short("f")
                 .multiple(true)
                 .takes_value(true)
                 .number_of_values(1)
-                .value_names(&["FILENAME"])
+                .value_names(&["PARAMETER_FILE"])
         )
         .get_matches();
 
     let mut values = HashMap::new();
 
-    // Parse Parameter files first, passing command line parameters
-    // should override any values supplied via a file
     if let Some(files) = matches.values_of("parameter-file") {
-        let params_from_file = parameter_files(files);
+        let params_from_file = parameter_files(files)?;
+
         values.extend(params_from_file);
     }
 
@@ -123,18 +129,20 @@ fn real_main() -> Result<(), String> {
     }
 }
 
-fn parameter_files(mut param_files: Values) -> ParameterValues {
+fn parameter_files(mut param_files: Values) -> Result<ParameterValues, String> {
     let mut parameter_values = ParameterValues::new();
 
     loop {
-        if let Some(f) = param_files.next() {
-            let param_file = ParameterFile::from_file(&f).unwrap();
-            parameter_values.extend(param_file.parameters);
+        if let Some(filename) = param_files.next() {
+            let values = parameter_values_from_file(&filename)?;
+
+            parameter_values.extend(values);
         } else {
             break;
         }
     }
-    parameter_values
+
+    Ok(parameter_values)
 }
 
 fn parameter_values(mut parameters: Values, base64_encoded: bool) -> ParameterValues {

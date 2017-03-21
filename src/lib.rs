@@ -79,19 +79,27 @@ extern crate regex;
 extern crate yaml_rust as yaml;
 
 pub use template::Template;
-pub use parameter::{ParameterValue, ParameterValues};
-pub use parameterfile::{ParameterFile};
+pub use parameter::{ParameterValue, ParameterValues, parameter_values_from_file};
 pub use secret::{Secret, Secrets};
 
 mod parameter;
-mod parameterfile;
 mod processor;
 mod secret;
 mod template;
 
 #[cfg(test)]
 mod tests {
-    use super::{ParameterValue, ParameterValues, ParameterFile, Secret, Secrets, Template};
+    use std::fs::File;
+    use std::io::Read;
+
+    use super::{
+        ParameterValue,
+        ParameterValues,
+        Secret,
+        Secrets,
+        Template,
+        parameter_values_from_file,
+    };
 
     #[test]
     fn encode_secrets() {
@@ -197,55 +205,18 @@ parameters:
     }
 
     #[test]
-    fn parse_parameter_file() {
-        let parameter_file_contents = r#"
----
-db_user: bob
-db_password: changeme
-db_port: 1234
-"#;
-        let template_contents = r#"
----
-kind: Template
-apiVersion: v1
-metadata:
-  name: param-file-example
-objects:
-  - kind: Pod
-    apiVersion: v1
-    metadata:
-      name: db_app
-    spec:
-      containers:
-      - name: mydb
-        image: mydb
-        env:
-        - name: USERNAME
-          value: $(db_user)
-        - name: PASSWORD
-          value: $(db_password)
-        - name: DB_PORT
-          value: $(db_port)
-parameters:
-  - name: db_user
-    description: Database username
-    required: true
-    parameterType: string
-  - name: db_password
-    description: Database user password
-    required: true
-    parameterType: base64
-  - name: db_port
-    description: Database port
-    required: true
-    parameterType: int
-"#;
+    fn parameter_file() {
+        let mut template_file = File::open("example.yml").unwrap();
+        let mut template_contents = String::new();
 
-        let parameter_file = ParameterFile::from_str(parameter_file_contents.to_string()).unwrap();
+        template_file.read_to_string(&mut template_contents).unwrap();
+
+        let parameter_values = parameter_values_from_file("params.yml").unwrap();
+
         let template = Template::new(
             template_contents.to_string(),
-            parameter_file.parameters,
-            Some(Secrets::new()),
+            parameter_values,
+            None,
         ).unwrap();
 
         let processed_template = template.process().unwrap();
@@ -254,24 +225,50 @@ parameters:
             processed_template.lines().map(|l| l.trim_right()).collect::<Vec<&str>>().join("\n"),
             r#"---
 apiVersion: v1
-kind: Pod
+kind: Service
 metadata:
-  name: db_app
+  name: mongodb
 spec:
-  containers:
+  ports:
     -
-      env:
+      name: mongo
+      protocol: TCP
+      targetPort: 27017
+  selector:
+    name: mongodb
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: mongodb
+spec:
+  replicas: 2
+  selector:
+    name: mongodb
+  template:
+    metadata:
+      creationTimestamp: ~
+      labels:
+        name: mongodb
+    spec:
+      containers:
         -
-          name: USERNAME
-          value: bob
-        -
-          name: PASSWORD
-          value: "Y2hhbmdlbWU="
-        -
-          name: DB_PORT
-          value: "1234"
-      image: mydb
-      name: mydb"#
+          env:
+            -
+              name: MONGODB_USER
+              value: carl
+            -
+              name: MONGODB_PASSWORD
+              value: c2VjcmV0
+            -
+              name: MONGODB_DATABASE
+              value: sampledb
+          image: "docker.io/centos/mongodb-26-centos7"
+          name: mongodb
+          ports:
+            -
+              containerPort: 27017
+              protocol: TCP"#
         );
     }
 }
