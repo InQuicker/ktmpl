@@ -80,16 +80,18 @@ extern crate yaml_rust as yaml;
 
 pub use template::Template;
 pub use parameter::{ParameterValue, ParameterValues};
+pub use parameterfile::{ParameterFile};
 pub use secret::{Secret, Secrets};
 
 mod parameter;
+mod parameterfile;
 mod processor;
 mod secret;
 mod template;
 
 #[cfg(test)]
 mod tests {
-    use super::{ParameterValue, ParameterValues, Secret, Secrets, Template};
+    use super::{ParameterValue, ParameterValues, ParameterFile, Secret, Secrets, Template};
 
     #[test]
     fn encode_secrets() {
@@ -192,5 +194,84 @@ parameters:
         ).unwrap();
 
         assert!(template.process().is_err());
+    }
+
+    #[test]
+    fn parse_parameter_file() {
+        let parameter_file_contents = r#"
+---
+db_user: bob
+db_password: changeme
+db_port: 1234
+"#;
+        let template_contents = r#"
+---
+kind: Template
+apiVersion: v1
+metadata:
+  name: param-file-example
+objects:
+  - kind: Pod
+    apiVersion: v1
+    metadata:
+      name: db_app
+    spec:
+      containers:
+      - name: mydb
+        image: mydb
+        env:
+        - name: USERNAME
+          value: $(db_user)
+        - name: PASSWORD
+          value: $(db_password)
+        - name: DB_PORT
+          value: $(db_port)
+parameters:
+  - name: db_user
+    description: Database username
+    required: true
+    parameterType: string
+  - name: db_password
+    description: Database user password
+    required: true
+    parameterType: base64
+  - name: db_port
+    description: Database port
+    required: true
+    parameterType: int
+"#;
+
+        let parameter_file = ParameterFile::from_str(parameter_file_contents.to_string()).unwrap();
+        let template = Template::new(
+            template_contents.to_string(),
+            parameter_file.parameters,
+            Some(Secrets::new()),
+        ).unwrap();
+
+        let processed_template = template.process().unwrap();
+
+        assert_eq!(
+            processed_template.lines().map(|l| l.trim_right()).collect::<Vec<&str>>().join("\n"),
+            r#"---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: db_app
+spec:
+  containers:
+    -
+      env:
+        -
+          name: USERNAME
+          value: bob
+        -
+          name: PASSWORD
+          value: "Y2hhbmdlbWU="
+        -
+          name: DB_PORT
+          value: "1234"
+      image: mydb
+      name: mydb"#
+        );
     }
 }
