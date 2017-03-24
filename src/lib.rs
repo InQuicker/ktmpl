@@ -79,7 +79,13 @@ extern crate regex;
 extern crate yaml_rust as yaml;
 
 pub use template::Template;
-pub use parameter::{ParameterValue, ParameterValues, parameter_values_from_file};
+pub use parameter::{
+    ParameterValue,
+    ParameterValues,
+    parameter_values_from_file,
+    parameter_values_from_str,
+    parameter_values_from_yaml,
+};
 pub use secret::{Secret, Secrets};
 
 mod parameter;
