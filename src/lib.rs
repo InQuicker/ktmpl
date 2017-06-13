@@ -85,6 +85,7 @@ pub use parameter::{
     parameter_values_from_file,
     parameter_values_from_str,
     parameter_values_from_yaml,
+    parameter_values_from_env,
 };
 pub use secret::{Secret, Secrets};
 
@@ -105,6 +106,7 @@ mod tests {
         Secrets,
         Template,
         parameter_values_from_file,
+        parameter_values_from_env,
     };
 
     #[test]

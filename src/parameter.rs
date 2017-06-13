@@ -3,6 +3,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::Read;
 use std::str::FromStr;
+use std::env;
 
 use base64::encode;
 use yaml::{Yaml, YamlLoader};
@@ -38,6 +39,20 @@ pub type ParamMap = HashMap<String, Parameter>;
 
 /// A map of parameter names to user-supplied values of the parameters.
 pub type ParameterValues = HashMap<String, ParameterValue>;
+
+/// Loads `ParameterValues` from the environment variables.
+pub fn parameter_values_from_env() -> Result<ParameterValues, String> {
+    let mut env_values = ParameterValues::new();
+
+    for (key, value) in env::vars() {
+        env_values.insert(
+             key.to_string(),
+             ParameterValue::Plain(value.to_string()),
+        );
+    }
+
+    Ok(env_values)
+}
 
 /// Loads `ParameterValues` from a file.
 pub fn parameter_values_from_file(file_path: &str) -> Result<ParameterValues, String> {

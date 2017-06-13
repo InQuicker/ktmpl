@@ -16,6 +16,7 @@ use ktmpl::{
     Secrets,
     Template,
     parameter_values_from_file,
+    parameter_values_from_env,
 };
 
 fn main() {
@@ -85,6 +86,10 @@ fn real_main() -> Result<(), String> {
         .get_matches();
 
     let mut values = HashMap::new();
+
+    let mut env_values = ParameterValues::new();
+    env_values.extend(parameter_values_from_env()?);
+    values.extend(env_values);
 
     if let Some(files) = matches.values_of("parameter-file") {
         let params_from_file = parameter_files(files)?;
