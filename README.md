@@ -1,7 +1,7 @@
 # ktmpl
 
 **ktmpl** is a tool for processing [Kubernetes](http://kubernetes.io/) manifest templates.
-It is a very simple client-side implementation of the [Templates + Parameterization proposal](https://github.com/kubernetes/kubernetes/blob/master/docs/proposals/templates.md).
+It is a very simple client-side implementation of the [Templates + Parameterization proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/templates.md).
 
 ## Synopsis
 
